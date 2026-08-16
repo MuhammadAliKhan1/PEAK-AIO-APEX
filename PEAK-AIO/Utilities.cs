@@ -21,6 +21,50 @@ public static class Utilities
             Globals.playerObj = Player.localPlayer;
     }
 
+    /// <summary>
+    /// Version-safe way to read the current item name from an inventory slot.
+    /// Older PEAK builds exposed <c>Item.ItemSlot.prefab</c>; newer builds removed it,
+    /// and accessing it directly throws <see cref="System.MissingFieldException"/>
+    /// (which previously broke the entire DearImGui frame every render pass).
+    /// This never throws: it returns null when the field is absent on the installed
+    /// game build so callers can fall back to "None".
+    /// </summary>
+    private static System.Reflection.FieldInfo cachedSlotPrefabField;
+
+    public static string GetSlotItemName(object slot)
+    {
+        if (slot == null)
+            return null;
+
+        try
+        {
+            if (cachedSlotPrefabField == null)
+            {
+                var itemSlotType = typeof(Item).GetNestedType(
+                    "ItemSlot",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic
+                );
+
+                if (itemSlotType == null || !itemSlotType.IsInstanceOfType(slot))
+                    return null;
+
+                cachedSlotPrefabField = itemSlotType.GetField(
+                    "prefab",
+                    System.Reflection.BindingFlags.Public
+                        | System.Reflection.BindingFlags.NonPublic
+                        | System.Reflection.BindingFlags.Instance
+                );
+            }
+
+            var item = cachedSlotPrefabField?.GetValue(slot) as Item;
+            return item != null ? item.GetName() : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public static void UpdateItems()
     {
         UnityMainThreadDispatcher.Enqueue(() =>
