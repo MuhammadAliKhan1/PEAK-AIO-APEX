@@ -61,9 +61,11 @@ public static class Utilities
             UnityMainThreadDispatcher.Enqueue(() =>
             {
                 var slotData = Globals.playerObj.itemSlots[slot];
-                slotData.prefab = Globals.items[itemIndex];
-                slotData.data = new ItemInstanceData(Guid.NewGuid());
-                ItemInstanceDataHandler.AddInstanceData(slotData.data);
+
+                var itemData = new ItemInstanceData(Guid.NewGuid());
+                ItemInstanceDataHandler.AddInstanceData(itemData);
+
+                slotData.SetItem(Globals.items[itemIndex], itemData);
 
                 byte[] syncData = IBinarySerializable.ToManagedArray<InventorySyncData>(
                     new InventorySyncData(
