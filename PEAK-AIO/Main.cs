@@ -572,11 +572,16 @@ public class PeakMod : BaseUnityPlugin
 
                             string currentItemName = Localization.T("items.none");
 
+                            // NOTE: "Item.ItemSlot.prefab" was removed in current PEAK builds.
+                            // Accessing it throws MissingFieldException every frame, which
+                            // kills the whole DearImGui frame (menu appears to never open).
+                            // GetSlotItemName is version-safe and falls back to "None".
                             if (Player.localPlayer?.itemSlots != null &&
-                                Player.localPlayer.itemSlots.Length > slot &&
-                                Player.localPlayer.itemSlots[slot]?.prefab != null)
+                                Player.localPlayer.itemSlots.Length > slot)
                             {
-                                currentItemName = Player.localPlayer.itemSlots[slot].prefab.GetName();
+                                string resolved = Utilities.GetSlotItemName(Player.localPlayer.itemSlots[slot]);
+                                if (!string.IsNullOrEmpty(resolved))
+                                    currentItemName = resolved;
                             }
 
                             ImGui.Text(Localization.T("items.item_n", slot + 1));
